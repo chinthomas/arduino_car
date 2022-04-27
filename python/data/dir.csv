@@ -1,0 +1,5 @@
+DIR,N,S,W,E
+N,s,t,l,r
+S,t,s,r,l
+W,r,l,s,t
+E,l,r,t,s
