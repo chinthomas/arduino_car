@@ -1,5 +1,5 @@
 import csv
-
+import copy
 def bfs(adj_dict:dict, a:str, b:str, path_length = 1) -> tuple:
     """
     adj_dict = {
@@ -39,9 +39,6 @@ def bfs(adj_dict:dict, a:str, b:str, path_length = 1) -> tuple:
         pivot = visited.index(pre[pivot])
     return bfspath[::-1], dis
 
-def the_shortest_path():
-    pass
-
 class bfs_maze:
     def __init__(self, fname) -> None:
         """ 
@@ -69,7 +66,7 @@ class bfs_maze:
         self.path = list()
         self.maze = list()
         self.endpoint = list()
-        with open(fname, 'r') as csvfile:
+        with open(fname, 'r', encoding='utf-8') as csvfile:
             rows = csv.DictReader(csvfile)
             self.header = rows.fieldnames
             for row in rows:
@@ -139,43 +136,113 @@ class bfs_maze:
                     for node in range(1,len(path)-1):                   # new node add into adjacent list
                         self.adj[path[node]] =  [path[node-1], path[node+1]]
 
-    def find_order(self, start_node):
+# -----------------------------------------------------------------------------------------------------
+# 寶藏順序規劃
+# -----------------------------------------------------------------------------------------------------
+
+    def find_order(self, start_node)->list:
+        """ 只有起點正確, endpoint=[result] """
         i_start = self.endpoint.index(start_node)
         self.endpoint = self.endpoint[i_start:]+self.endpoint[:i_start]
         return self.endpoint
+
+    def find_order_exhuasive(self, start_node)->list:
+        """ 
+            窮舉出所有的寶藏順序, 
+            endpoint=[
+                [result1],
+                [result2],...
+            ]
+        """
+        def search(now:str, endpoint:list, path:list):
+            ### 加上現在的node
+            new_path=copy.deepcopy(path)
+            new_path.append(now)
+            ### 將寶藏點扣除
+            copy_endpoint = copy.deepcopy(endpoint)
+            copy_endpoint.remove(now)
+            
+            ### 迴圈終點
+            if len(copy_endpoint)==0:
+                # print(new_path)
+                solution.append(new_path)
+            ### 下一個node
+            else:
+                for i in copy_endpoint:
+                    search(i, copy_endpoint, new_path)
+        solution =[]
+        endpoint = copy.deepcopy(self.endpoint)
+        search(start_node, endpoint, [])
+        self.endpoint = solution
+        return solution
+
+# -----------------------------------------------------------------------------------------------------
+#  add path with different method
+# -----------------------------------------------------------------------------------------------------
     ### 給任意兩點，回傳bfs最短路徑 ###
     def bfs(self, a, b) -> tuple:    # (path:list, length:int)
         self.find_adj()
         self.path, length = bfs(self.adj, a, b)
         return self.path, length
-    ### 加入距離為條件 ###
+    
+    ### 給任意兩點，回傳bfs最短路徑，加入距離為條件 ###
     def bfs_short(self, a, b) -> tuple:
         self.find_adj_dis()
         rowpath, length = bfs(self.adj, a, b)
+        self.path = []
         for i in rowpath:
             if int(i) < 100:
                 self.path.append(i)
         return self.path, length
     
-    def bfs_all_maze(self, start_node) -> list:
-        # print("order of treasure:", endpoint)
-        self.find_order(start_node)
-        endpoint = self.endpoint[::-1]
+    ### 給任意起點，隨機回傳走完地圖的路徑 ###
+    def bfs_allmaze(self, start_node):
+        self.find_order(start_node)     # 排好寶藏順序
+        endpoint = self.endpoint[::-1]  # 使用pop所以list要顛倒
         start = endpoint.pop()
-        entire_path = [start]
-        entire_length = 0
-        while len(endpoint) > 0:
-            end = endpoint.pop()                
+        entire_path = [start]           # 紀錄經過的node
+        entire_length = 0               # 紀錄路徑長度
+        while len(endpoint) > 0:        # 提出下一個節點，進行BFS
+            end = endpoint.pop()
             path, length = self.bfs(start, end)
             # print(f'start:{start}, end:{end}, path: {path}')
             ### add node in entire_path
+            entire_length += length     # 將結果累積紀錄
             for node in path[1:len(path)]:
                 entire_path.append(node)
-            start = end
-            entire_length += length
+            start = end                 # 下一次
+
         self.path = entire_path
         return entire_path, entire_length
+    
+    ### 給任意起點，回傳走完地圖最短的路徑 ###
+    def bfs_allmaze_length(self, start_node:str):
+        self.find_order_exhuasive(start_node)
+        solution_path = []
+        solution_len = 0
+        for treasure in self.endpoint:
+            treasure = treasure[::-1]
+            start = treasure.pop()
+            entire_path = [start]
+            entire_length = 0
+            while len(treasure) > 0:
+                end = treasure.pop()                
+                path, length = self.bfs_short(start, end)
+                entire_length += length
+                for node in path[1:len(path)]:
+                    entire_path.append(node)
+                start = end
+            if solution_len == 0:# compare length 
+                solution_len = entire_length
+                solution_path = entire_path
+            elif solution_len > entire_length:
+                solution_len = entire_length
+                solution_path = entire_path
+        return(solution_path, solution_len)
 
+# ------------------------------------------------------------------------------------------------------------
+# direction
+# ------------------------------------------------------------------------------------------------------------
     ### 找出由a到b的方向 ###
     def node_dir(self, a:str, b:str) -> str:
         for row in self.maze:
@@ -207,25 +274,17 @@ class bfs_maze:
                 node_a = node_b
         return path_ns, path_turn
 
+# ------------------------------------------------------------------------------------------------------------
+# solution
+# ------------------------------------------------------------------------------------------------------------
 
-
-    def bfs_allpath(self) -> dict:
-        endpoint = self.endpoint
-        all_path = dict()
-        while len(endpoint) > 1:
-            for t in range(len(endpoint)):
-                start = endpoint.pop()
-                for end in endpoint:
-                    all_path[start +'-'+ end], length = self.bfs(start, end)
-        return all_path
-
-    def all_path(self) -> dict:
+    def find_all_path(self, start_node) -> dict:
         """
             all_path = {
                 a, b, node_list, length, action, time
             }
         """
-        endpoint = self.endpoint
+        endpoint = copy.deepcopy(self.endpoint)
         all_path = list()
         while len(endpoint) > 1:
             start = endpoint.pop()
@@ -239,15 +298,15 @@ class bfs_maze:
                 all_path.append(path_infro)
                 print(path_infro)
 
-    def order_exhausive(self, start):
-        endpoint = self.endpoint
-        endpoint.remove(start)
-        
+           
 
-        return 
-        
 if __name__ == "__main__":
     import time
+    # test web : http://192.168.50.165:3000
+    # maze = bfs_maze("./E_maze.csv")
+    # maze = bfs_maze("./E_maze_random.csv")
+    # maze = bfs_maze("medium_maze.csv")
+    # maze = bfs_maze("maze.csv")
 
     def timer(func):
         def wrapped(*args, **kwargs):
@@ -255,12 +314,6 @@ if __name__ == "__main__":
             func(*args, **kwargs)
             print(f'timer : using {(time.time()-t_start):.6f}s\n')
         return wrapped
-
-    # test web : http://192.168.50.165:3000
-    # maze = bfs_maze("./E_maze.csv")
-    # maze = bfs_maze("./E_maze_random.csv")
-    # maze = bfs_maze("medium_maze.csv")
-    # maze = bfs_maze("maze.csv")
 
     @timer
     def test1(fname,a ,b ,pos='N'):
@@ -278,29 +331,17 @@ if __name__ == "__main__":
         print(f"--- Show path to run {fname} from node{start}---")
         
         maze = bfs_maze('./data/'+fname)
-        maze_path, length = maze.bfs_all_maze(start)
+        maze_path, length = maze.bfs_allmaze(start)
         print("Entire Path:", maze_path)
         print("Length:", length)
         dir, action = maze.get_dir(pos)
         print("entire action:" ,action)
-
+    
+    @timer
     def test3(fname, start, pos='N'):
         print(f"--- Show all paths in {fname} ---")
         maze = bfs_maze('./data/'+fname)
-        maze.all_path()
+        print(maze.bfs_allmaze_length(start))
 
 
-    # test1("E_maze.csv", '5', '1', 'N')
-    # test1("E_maze_random.csv", '8', '9', 'S')
-    # test1("medium_maze.csv", '1', '12')
-    # test1("maze.csv", '1', '20')
-
-    # test2("E_maze.csv",'5','N')
-    test3("maze.csv",'1')
-
-
-"""
-    # allmaze shortest path
-    # allmaze less node path
-    # 跳號問題 O
-"""
+    test3("maze.csv",'2')
