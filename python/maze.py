@@ -1,5 +1,6 @@
 import csv
 import copy
+from shortestpath import ShortestPath
 def bfs(adj_dict:dict, a:str, b:str, path_length = 1) -> tuple:
     """
     adj_dict = {
@@ -44,7 +45,7 @@ class bfs_maze:
         """ 
             auto import csv table to self.maze
             and get header
-            start = ['node', 'direction']
+            #start = ['node', 'direction']
             maze = [
                 {'index' : 'node','North' : 'node','Sorth' : 'node', ...},
                 {'index' : 'node','North' : 'node','Sorth' : 'node', ...},
@@ -75,7 +76,7 @@ class bfs_maze:
                     if row[key] > '0':
                         i += 1
                 if i <= 1:
-                    self.endpoint.append(row['index']) 
+                    self.endpoint.append(row['index'])
                 self.maze.append(row)
         self.start = self.endpoint[0]        
 
@@ -136,6 +137,16 @@ class bfs_maze:
                     for node in range(1,len(path)-1):                   # new node add into adjacent list
                         self.adj[path[node]] =  [path[node-1], path[node+1]]
 
+    def find_point(self, start, w):
+        treasure = copy.deepcopy(self.endpoint)
+        treasure.remove(start)
+        x0 = (int(start)-1)//w
+        y0 = (int(start)-1)%w
+        self.point = dict()
+        for i in treasure:
+            x = (int(i)-1)//w
+            y = (int(i)-1)%w
+            self.point[i] = abs(x-x0)+abs(y-y0)
 # -----------------------------------------------------------------------------------------------------
 # 寶藏順序規劃
 # -----------------------------------------------------------------------------------------------------
@@ -238,6 +249,7 @@ class bfs_maze:
             elif solution_len > entire_length:
                 solution_len = entire_length
                 solution_path = entire_path
+        self.path = solution_path
         return(solution_path, solution_len)
 
 # ------------------------------------------------------------------------------------------------------------
@@ -298,7 +310,30 @@ class bfs_maze:
                 all_path.append(path_infro)
                 print(path_infro)
 
-           
+    def strategy1(self, start_node, pos, width)->list:
+        def search(now:ShortestPath, now_node:str, treasure_left:list,pos):
+            treasure = copy.deepcopy(treasure_left)
+            treasure.remove(now_node)
+            if len(treasure) == 0 or now.usetime > 60:
+                # print(now)
+                if solution[0].point<now.point:
+                    solution[0] = now
+                if solution[0].point==now.point and solution[0].usetime > now.usetime:
+                    solution[0] = now
+            else:
+                for next_node in treasure:
+                    next_path , length = self.bfs_short(now_node, next_node)
+                    dir, action = self.get_dir(pos)
+                    next = now + ShortestPath(now_node, next_node, self.point[next_node], next_path, length, action)
+                    search(next, next_node, treasure,pos)
+
+        self.find_point(start_node, width)
+        print(self.point)
+        treasure = copy.deepcopy(self.endpoint)
+        now = ShortestPath(start='0',end=start_node, point=0, bfspath=[], length=0, action='')
+        solution = [now]
+        search(now, start_node, treasure,pos)
+        print(solution[0])
 
 if __name__ == "__main__":
     import time
@@ -339,9 +374,23 @@ if __name__ == "__main__":
     
     @timer
     def test3(fname, start, pos='N'):
-        print(f"--- Show all paths in {fname} ---")
+        print(f"--- Show shortest paths in {fname} ---")
         maze = bfs_maze('./data/'+fname)
-        print(maze.bfs_allmaze_length(start))
-
-
-    test3("maze.csv",'2')
+        maze_path, length = maze.bfs_allmaze_length(start)
+        print("Entire Path:", maze_path)
+        print("Length:", length)
+        dir, action = maze.get_dir(pos)
+        print("entire action:" ,action)
+    @timer
+    def test4(fname, start, pos='N'):
+        print(f'--- Show all paths in {fname} ---')
+        maze = bfs_maze('./data/'+fname)
+        print(maze.endpoint)
+        maze.strategy1(start,pos,6)
+    # test3("medium_maze.csv",'1')    
+    # test4("maze.csv",'2','N')
+    maze = bfs_maze('./data/maze_8x6_1.csv')
+    print(maze.find_order_exhuasive('6'))
+    # test4("maze_8x6_1.csv",'6', 'W')
+    
+    # test3("maze_8x6_1.csv",'6', 'W')

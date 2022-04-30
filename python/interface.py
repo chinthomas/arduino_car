@@ -63,7 +63,7 @@ if __name__ == "__main__":
     car_interf = interface()
     car_interf.connect_BT("COM4")
     map = input("Please Give the Action To Car:")
-    car_interf.connect_server()
+    car_interf.connect_server(args.test)
     t_start = time.time()
     car_interf.send_action(map)
     UID = b'84EAB017'
@@ -75,7 +75,7 @@ if __name__ == "__main__":
         if car_interf.ser.waiting():
             # UID = car_interf.ser.SerialReadByte()
             # car_interf.upload_UID(UID)
-            car_interf.score(args.test)        
+            car_interf.score()        
     car_interf.end_interface()
     # readThread = threading.Thread(target=car_interf.BT_write)
     # readThread.daemon = True

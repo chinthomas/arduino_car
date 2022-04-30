@@ -1,4 +1,3 @@
-import sys
 import maze
 import time
 import interface
@@ -7,7 +6,7 @@ import threading
 
 # 這裡可以改預設參數 #
 # default 後面 #
-def get_parser():
+def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Arduino-Car Server")
     parser.add_argument('-p', '--port', default="COM4", help="the port of BT")
     parser.add_argument('-f', '--file', default="./data/E_maze.csv", help="the file of maze")
