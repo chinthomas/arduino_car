@@ -310,7 +310,7 @@ class bfs_maze:
                 all_path.append(path_infro)
                 print(path_infro)
 
-    def strategy1(self, start_node, pos, width)->list:
+    def strategy1(self, start_node, pos, width):
         def search(now:ShortestPath, now_node:str, treasure_left:list,pos):
             treasure = copy.deepcopy(treasure_left)
             treasure.remove(now_node)
@@ -334,6 +334,7 @@ class bfs_maze:
         solution = [now]
         search(now, start_node, treasure,pos)
         print(solution[0])
+        return solution[0]
 
 if __name__ == "__main__":
     import time

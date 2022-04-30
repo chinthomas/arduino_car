@@ -9,7 +9,7 @@ import threading
 def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Arduino-Car Server")
     parser.add_argument('-p', '--port', default="COM4", help="the port of BT")
-    parser.add_argument('-f', '--file', default="./data/E_maze.csv", help="the file of maze")
+    parser.add_argument('-f', '--file', default="./data/medium_maze.csv", help="the file of maze")
     parser.add_argument('--start', default="1", help="the start node")
     parser.add_argument('--end', default="0", help="the end node")
     parser.add_argument('--dir', default="N", help="the car direction")
@@ -25,13 +25,13 @@ def get_action(carmaze:maze.bfs_maze, start:str, end:str, dir:str, mode:str='1')
     if mode == '0':
         entire_path, length = carmaze.bfs(start, end)
     elif mode == '1':
-        entire_path, length = carmaze.bfs_all_maze(start)
+        entire_path, length = carmaze.bfs_allmaze(start)
     elif mode == '2':
-        pass
+        entire_path, length = carmaze.bfs_allmaze_length(start)
     
     elif mode == '3':
-        pass
-
+        solution = carmaze.strategy1(start,dir,3) # modify width of the maze
+        return solution.action
     path, action = carmaze.get_dir(dir)
     print("Entire Path:", entire_path)
     print("Length:", length)
