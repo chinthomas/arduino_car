@@ -20,22 +20,23 @@ python main.py -t
 python main.py --bfs
 
 ***4. 不同BFS的模式***
-python main.py --mode MODE
-mode 0 : 輸入起點、終點，和指定地圖，以最短路徑行走到終點
-mode 1 : (預設模式)輸入起點，和指定地圖，隨機路線走完全部的寶藏點
-mode 2 : 空，敬請期待
-mode 3 : 空，敬請期待
+>python main.py --mode MODE
+>mode 0 : 輸入起點、終點，和指定地圖，以最短路徑行走到終點
+>mode 1 : (預設模式)輸入起點，和指定地圖，隨機路線走完全部的寶藏點
+>mode 2 : 窮舉最短路徑
+>mode 3 : 遞迴求時間內最高分
+>mode 4 : 用stem-branch根據單位路徑的效率高低前進
 
 ***5. 其他參數***
-  -h, --help            show this help message and exit
-  -p PORT, --port PORT  the port of BT
-  -f FILE, --file FILE  the file of maze
-  --start START         the start node
-  --end END             the end node(acquired when use mode 0)
-  --dir DIR             the car direction( NSWE )
-  --mode MODE           mode for get_action(diff. treasure order)
-  -t, --test            test without connect to server
-  --bfs                 only test the bfs
+>  -h, --help            show this help message and exit
+>  -p PORT, --port PORT  the port of BT
+>  -f FILE, --file FILE  the file of maze
+>  --start START         the start node
+>  --end END             the end node(acquired when use mode 0)
+>  --dir DIR             the car direction( NSWE )
+>  --mode MODE           mode for get_action(diff. treasure order)
+>  -t, --test            test without connect to server
+>  --bfs                 only test the bfs
 
 
 # 其他檔案 #
@@ -55,6 +56,6 @@ Arduino、server和python間資料傳輸的設定
 ***score_student.py***
 連接local
 
-*** ./data ***
+***data(dir)***
 存放地圖資料
 存放local伺服器的UID分數(可加入新的UID)
