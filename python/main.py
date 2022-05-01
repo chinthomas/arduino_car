@@ -3,6 +3,7 @@ import time
 import interface
 import argparse
 import threading
+import sys
 
 # 這裡可以改預設參數 #
 # default 後面 #
@@ -32,6 +33,7 @@ def get_action(carmaze:maze.bfs_maze, start:str, end:str, dir:str, mode:str='1')
     elif mode == '3':
         solution = carmaze.strategy1(start,dir,3) # modify width of the maze
         return solution.action
+
     path, action = carmaze.get_dir(dir)
     print("Entire Path:", entire_path)
     print("Length:", length)
@@ -59,14 +61,18 @@ def main(parser: argparse.ArgumentParser):
     
     # time start
     interf.connect_server(args.test,'RFeasy') # 隊名這裡改
-
-    # car start
-    t_start = time.time()
-    # action = ''                     # 直接指定用這行
-    interf.send_action(action)        # 傳車子的動作指令
-
-    while (time.time()-t_start) < 95: # 程式執行時間，結束後車子仍會跑，但python收不到UID
-        interf.score()                # 讀UID並print分數
+    
+    ans = input('ready to go?[y/n]')
+    
+    if ans in ['n', 'N']:
+        print('cancel plan')
+    
+    else:# car start
+        t_start = time.time()
+        # action = ''                     # 直接指定用這行
+        interf.send_action(action)        # 傳車子的動作指令
+        while (time.time()-t_start) < 95: # 程式執行時間，結束後車子仍會跑，但python收不到UID
+            interf.score()                # 讀UID並print分數
 
     ### gmae end ###
     print("interface end\n")
