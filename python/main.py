@@ -33,6 +33,8 @@ def get_action(carmaze:maze.bfs_maze, start:str, end:str, dir:str, mode:str='1')
     elif mode == '3':
         solution = carmaze.strategy1(start,dir,3) # modify width of the maze
         return solution.action
+    elif mode == '4':
+        entire_path, length = carmaze.strategy2(start,6) # modify width of the maze
 
     path, action = carmaze.get_dir(dir)
     print("Entire Path:", entire_path)

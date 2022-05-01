@@ -138,11 +138,17 @@ class bfs_maze:
                         self.adj[path[node]] =  [path[node-1], path[node+1]]
 
     def find_point(self, start, w):
+        """
+            self.point = {
+                'node':int(point),...
+            }
+        """
         treasure = copy.deepcopy(self.endpoint)
         treasure.remove(start)
         x0 = (int(start)-1)//w
         y0 = (int(start)-1)%w
         self.point = dict()
+        self.point['0'] = 0 ### stategy2
         for i in treasure:
             x = (int(i)-1)//w
             y = (int(i)-1)%w
@@ -215,7 +221,7 @@ class bfs_maze:
         entire_length = 0               # 紀錄路徑長度
         while len(endpoint) > 0:        # 提出下一個節點，進行BFS
             end = endpoint.pop()
-            path, length = self.bfs(start, end)
+            path, length = self.bfs_short(start, end)
             # print(f'start:{start}, end:{end}, path: {path}')
             ### add node in entire_path
             entire_length += length     # 將結果累積紀錄
@@ -335,7 +341,69 @@ class bfs_maze:
         search(now, start_node, treasure,pos)
         print(solution[0])
         return solution[0]
+    
+# ------------------------------------------------------------------------------------------------------------
+    def strategy2(self, start_node, width):
+        def analyze_stem(stem:list, treasure)->list:
+            stem_point = dict()
+            stem_connect = dict()
+            for stemNode in stem:
+                stem_point[stemNode]=0
+                stem_connect[stemNode]=[]
+            for endpoint in treasure:
+                heff = 0
+                hi = '0'
+                for stemNode, stem_len in zip(stem, range(len(stem))):
+                    n,l=self.bfs_short(stemNode,endpoint)
+                    eff = self.point[endpoint] / (l+stem_len)
+                    if eff > heff:
+                        heff = eff
+                        hi = stemNode
+                    # print(endpoint, stemNode, eff)
+                n,l=self.bfs_short(start_node,endpoint)
+                stem_point[hi] += self.point[endpoint]/l # version2
+                stem_connect[hi].append(endpoint)
+            return stem_point, stem_connect
 
+        def search(start_node, treasure):
+            if len(treasure) == 1:
+                return treasure
+            elif len(treasure) == 0:
+                return []
+            
+            highestNode = '0' # node of highest_node
+            for i in treasure:# find highest point
+                if self.point[i] > self.point[highestNode]:
+                    highestNode = i
+            treasure.remove(highestNode)
+            
+            stem , stem_length = self.bfs_short(start_node, highestNode)
+            stem_point = dict() # [point/length,...]
+            stem_connect = dict() # [[connected_treasure],...]
+            stem_point ,stem_connect = analyze_stem(stem, treasure)
+            stem_point[highestNode] = self.point[highestNode]/stem_length
+            treasure_high = [] 
+            treasure_low = []
+            for node in stem:
+                if stem_point[node] >= stem_point[highestNode]:
+                    treasure_high += stem_connect[node]
+                else:
+                    treasure_low += stem_connect[node]
+            # print(start_node, highestNode)
+            # print(stem)
+            # print(stem_point)
+            # print(stem_connect)
+            # print('')
+            return search(start_node, treasure_high) + [highestNode] + search(highestNode, treasure_low)
+        treasure = copy.deepcopy(self.endpoint)
+        self.find_point(start_node, width)
+        treasure.remove(start_node)
+        print(treasure)
+        treasure_order = search(start_node, treasure)
+        print(f'treasure order:{treasure_order}')
+        self.endpoint=[start_node] + treasure_order
+
+        return self.bfs_allmaze(start_node)
 if __name__ == "__main__":
     import time
     # test web : http://192.168.50.165:3000
@@ -388,10 +456,21 @@ if __name__ == "__main__":
         maze = bfs_maze('./data/'+fname)
         print(maze.endpoint)
         maze.strategy1(start,pos,6)
+    
+    def test5(fname, start, width, pos='N'):
+        print(f'--- Use s2  solve {fname} ---')
+        maze = bfs_maze('./data/'+fname)
+        maze_path, length = maze.strategy2(start, width)
+        print("Entire Path:", maze_path)
+        print("Length:", length)
+        dir, action = maze.get_dir(pos)
+        print("entire action:" ,action)
+
+    # test5("medium_maze.csv",'1', 3)
+    # test5("maze.csv",'2', 5)
+    test5("maze_8x6_1.csv",'6', 6)
+
     # test3("medium_maze.csv",'1')    
     # test4("maze.csv",'2','N')
-    maze = bfs_maze('./data/maze_8x6_1.csv')
-    print(maze.find_order_exhuasive('6'))
     # test4("maze_8x6_1.csv",'6', 'W')
-    
     # test3("maze_8x6_1.csv",'6', 'W')
