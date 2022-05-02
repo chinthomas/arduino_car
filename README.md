@@ -35,8 +35,8 @@
 
 ***5. 其他參數***
 >*   -h, --help            show this help message and exit
->*   -p PORT, --port PORT  the port of BT
->*   -f FILE, --file FILE  the file of maze
+>*   -p PORT, --port PORT  the port of BT, UOOER LETTERS
+>*   -f FILE, --file FILE  the file of maze, form : data\[FILE]
 >*   --start START         the start node
 >*   --end END             the end node(acquired when use mode 0)
 >*   --dir DIR             the car direction( NSWE )
@@ -44,6 +44,10 @@
 >*   -t, --test            test without connect to server
 >*   --bfs                 only test the bfs
 
+***6. 直接改預設參數***
+* main.py當中的getparser
+* parser.add_argument('-f', '--file', default="./data/medium_maze.csv", help="the file of maze")
+* 改default後的預設參數。注意事項看參數介紹。
 
 ### 其他檔案 #
 ***maze.py*** 
