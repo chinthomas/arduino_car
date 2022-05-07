@@ -9,7 +9,7 @@ import sys
 # default 後面 #
 def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Arduino-Car Server")
-    parser.add_argument('-p', '--port', default="COM4", help="the port of BT")
+    parser.add_argument('-p', '--port', default="COM8", help="the port of BT")
     parser.add_argument('-f', '--file', default="./data/medium_maze.csv", help="the file of maze")
     parser.add_argument('--start', default="1", help="the start node")
     parser.add_argument('--end', default="0", help="the end node")
@@ -35,6 +35,9 @@ def get_action(carmaze:maze.bfs_maze, start:str, end:str, dir:str, mode:str='1')
         return solution.action
     elif mode == '4':
         entire_path, length = carmaze.strategy2(start,6) # modify width of the maze
+    elif mode == '5':
+        entire_path = carmaze.strategy4('6',6) # modify width of the maze
+        length = '?'
 
     path, action = carmaze.get_dir(dir)
     print("Entire Path:", entire_path)
@@ -57,29 +60,29 @@ def main(parser: argparse.ArgumentParser):
     interf = interface.interface()
     interf.connect_BT(args.port)
     
-    readThread = threading.Thread(target=interf.BT_write) # 還沒甚麼用
-    readThread.daemon = True
-    readThread.start()
+    # readThread = threading.Thread(target=interf.BT_write) # 還沒甚麼用
+    # readThread.daemon = True
+    # readThread.start()
     
-    # time start
-    interf.connect_server(args.test,'RFeasy') # 隊名這裡改
     
     ans = input('ready to go?[y/n]')
     
     if ans in ['n', 'N']:
         print('cancel plan')
     
+    # time start
     else:# car start
+        interf.connect_server(args.test,'RFeasy') # 隊名這裡改
         t_start = time.time()
-        # action = ''                     # 直接指定用這行
+        # action = 'slltrrtlltrrtlltrrtlltrrtllt'           # 直接指定用這行
         interf.send_action(action)        # 傳車子的動作指令
-        while (time.time()-t_start) < 95: # 程式執行時間，結束後車子仍會跑，但python收不到UID
+        while (time.time()-t_start) < 30: # 程式執行時間，結束後車子仍會跑，但python收不到UID
             interf.score()                # 讀UID並print分數
 
     ### gmae end ###
     print("interface end\n")
     interf.end_interface()
-    
+   
 
 if __name__ =="__main__":
     parser = get_parser()

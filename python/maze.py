@@ -1,5 +1,6 @@
 import csv
 import copy
+from uuid import RFC_4122
 from shortestpath import ShortestPath
 def bfs(adj_dict:dict, a:str, b:str, path_length = 1) -> tuple:
     """
@@ -234,9 +235,9 @@ class bfs_maze:
     
     ### 給任意起點，回傳走完地圖最短的路徑 ###
     def bfs_allmaze_length(self, start_node:str):
-        self.find_order_exhuasive(start_node)
-        solution_path = []
-        solution_len = 0
+        self.find_order_exhuasive(start_node) # 找出所有的可能寶藏順序
+        solution_path = [] # 紀錄選定的路徑
+        solution_len = 0   # 紀錄選定的路徑長度
         for treasure in self.endpoint:
             treasure = treasure[::-1]
             start = treasure.pop()
@@ -317,19 +318,24 @@ class bfs_maze:
                 print(path_infro)
 
     def strategy1(self, start_node, pos, width):
+        # solution : global variable
         def search(now:ShortestPath, now_node:str, treasure_left:list,pos):
             treasure = copy.deepcopy(treasure_left)
-            treasure.remove(now_node)
-            if len(treasure) == 0 or now.usetime > 60:
+            treasure.remove(now_node) # 剩下的寶藏點
+            ### 迴圈終點
+            if len(treasure) == 0 or now.usetime > 60:  # 時間超過設定時間或寶藏點跑完
                 # print(now)
-                if solution[0].point<now.point:
+                # 比較分數，紀錄分數高的
+                if solution[0].point < now.point:
                     solution[0] = now
                 if solution[0].point==now.point and solution[0].usetime > now.usetime:
                     solution[0] = now
+            ### 下一個點
             else:
                 for next_node in treasure:
                     next_path , length = self.bfs_short(now_node, next_node)
                     dir, action = self.get_dir(pos)
+                    ### ShortestPath : 記錄所有路徑特性，時間、長度、action、bfs node list
                     next = now + ShortestPath(now_node, next_node, self.point[next_node], next_path, length, action)
                     search(next, next_node, treasure,pos)
 
@@ -344,6 +350,30 @@ class bfs_maze:
     
 # ------------------------------------------------------------------------------------------------------------
     def strategy2(self, start_node, width):
+        ### 最靠近的stem node
+        def analyze_stem2(stem:list, treasure)->list:
+            stem_point = dict()     # 主幹上節點的效率分數
+            stem_connect = dict()   # 主幹上節點連接的支幹終點
+            for stemNode in stem:   # 主幹上的節點，分數初始化
+                stem_point[stemNode]=0
+                stem_connect[stemNode]=[]
+
+            for endpoint in treasure:
+                short_branchLen = 0         # 紀錄最短支幹長度
+                h_stemNode = '0'            # 紀錄連接的主幹節點
+                for stemNode in stem:       # 支幹位置
+                    n, branchLen = self.bfs_short(stemNode,endpoint)
+
+                    if branchLen < short_branchLen or short_branchLen == 0:
+                        short_branchLen = branchLen
+                        h_stemNode = stemNode
+
+                n, totalLen = self.bfs_short(start_node, endpoint)
+                
+                stem_point[h_stemNode] += self.point[endpoint]/totalLen # 效率計算方式
+                stem_connect[h_stemNode].append(endpoint)               # 連接的主幹節點
+            return stem_point, stem_connect
+        ### 離起點最近的的 stem node
         def analyze_stem(stem:list, treasure)->list:
             stem_point = dict()
             stem_connect = dict()
@@ -365,36 +395,87 @@ class bfs_maze:
                 stem_connect[hi].append(endpoint)
             return stem_point, stem_connect
 
-        def search(start_node, treasure):
+        def search(start_node:str, treasure:list):
             if len(treasure) == 1:
                 return treasure
             elif len(treasure) == 0:
                 return []
-            
-            highestNode = '0' # node of highest_node
-            for i in treasure:# find highest point
+            ### 主幹找法：最高分? OR 效率最高?
+            highestNode = '0'       # node of highest_node
+            for i in treasure:      # find highest point
                 if self.point[i] > self.point[highestNode]:
                     highestNode = i
             treasure.remove(highestNode)
-            
-            stem , stem_length = self.bfs_short(start_node, highestNode)
-            stem_point = dict() # [point/length,...]
-            stem_connect = dict() # [[connected_treasure],...]
-            stem_point ,stem_connect = analyze_stem(stem, treasure)
-            stem_point[highestNode] = self.point[highestNode]/stem_length
-            treasure_high = [] 
+            stem , stem_length = self.bfs_short(start_node, highestNode)    # 找主幹
+            ### 主幹節點的資訊
+            stem_point = dict()                                             # 'node' : eff,...
+            stem_connect = dict()                                           # 'node' : [connected_treasure],...
+            stem_point ,stem_connect = analyze_stem2(stem, treasure)
+            stem_point[highestNode] = self.point[highestNode]/stem_length   # 分界點
+            ### 節點分高低
+            treasure_high = []
             treasure_low = []
             for node in stem:
                 if stem_point[node] >= stem_point[highestNode]:
                     treasure_high += stem_connect[node]
                 else:
                     treasure_low += stem_connect[node]
-            # print(start_node, highestNode)
-            # print(stem)
-            # print(stem_point)
-            # print(stem_connect)
-            # print('')
             return search(start_node, treasure_high) + [highestNode] + search(highestNode, treasure_low)
+
+        def search2(start_node:str, treasure:list):
+            if len(treasure) == 1:
+                return treasure
+            elif len(treasure) == 0:
+                return []
+            ### 主幹找法：最高分? OR 效率最高?
+            highestNode = '0'       # node of highest_node
+            for i in treasure:      # find highest point
+                if self.point[i] > self.point[highestNode]:
+                    highestNode = i
+            treasure.remove(highestNode)
+            stem , stem_length = self.bfs_short(start_node, highestNode)    # 找主幹
+            ### 主幹節點的資訊
+            stem_point = dict()                                             # 'node' : eff,...
+            stem_connect = dict()                                           # 'node' : [connected_treasure],...
+            stem_point ,stem_connect = analyze_stem2(stem, treasure)
+            stem_point[highestNode] = self.point[highestNode]/stem_length   # 分界點
+            ### 節點分高低
+            treasure_high = []
+            treasure_low = []
+            for node in stem:
+                if stem_point[node] >= stem_point[highestNode]:
+                    treasure_high += stem_connect[node]
+                else:
+                    treasure_low += stem_connect[node]
+            ### 微調
+            row_path = search(start_node, treasure_high) + [highestNode] + search(highestNode, treasure_low)
+            if len(row_path) >= 3:
+                s0 = row_path.index[highestNode]
+                r1 = copy.deepcopy(row_path)
+                r2 = copy.deepcopy(row_path)
+                ### switch
+                # cace 2 [s0,,]
+                if s0 == 0:
+                    s1 = s0 +1
+                    s2 = s0 +2
+                    ele1 = row_path[s1]
+                    ele2 = row_path[s2]
+                # cace 3 [,,s0]
+                if len(row_path) == s0+1:
+                    s1 = s0 -2
+                    s2 = s0 -1
+                    ele1 = row_path[s1]
+                    ele2 = row_path[s2]
+                # case 1 [:s0:]
+                else:
+                    s1 = s0 -1
+                    s2 = s0 +1
+                    ele1 = row_path[s1]
+                    ele2 = row_path[s2]
+                    r1[s1] = highestNode
+                    r1[s0] = ele1
+                    # r2[]
+
         treasure = copy.deepcopy(self.endpoint)
         self.find_point(start_node, width)
         treasure.remove(start_node)
@@ -404,6 +485,97 @@ class bfs_maze:
         self.endpoint=[start_node] + treasure_order
 
         return self.bfs_allmaze(start_node)
+
+# ------------------------------------------------------------------------------------------------------------
+    def strategy3(self, start_node):
+        # def select(start, treasure)->list:
+        #     short_Len = 0
+        #     for endpoint in treasure:
+        #         n, Len = self.bfs_short(start_node, endpoint)
+        #             if Len < short_Len or short_branchLen == 0:
+        #                 short_branchLen = Len
+
+        #         n, totalLen = self.bfs_short(start_node, endpoint)
+                
+        #         stem_point[h_stemNode] += self.point[endpoint]/totalLen # 效率計算方式
+        #         stem_connect[h_stemNode].append(endpoint)               # 連接的主幹節點
+        #     return select_node
+        # def search(start_node, treasure):
+        #     if len(treasure) == 1:
+        #         return treasure
+        #     elif len(treasure) == 0:
+        #         return []
+        #     ### 主幹找法：最高分? OR 效率最高?
+        #     highestNode = '0'       # node of highest_node
+        #     for i in treasure:      # find highest point
+        #         if self.point[i] > self.point[highestNode]:
+        #             highestNode = i
+        #     treasure.remove(highestNode)
+        #     stem , stem_length = self.bfs_short(start_node, highestNode)    # 找主幹
+        #      ### 主幹節點的資訊
+        #     stem_point = dict()                                             # 'node' : eff,...
+        #     stem_connect = dict()
+        return 0
+
+    def strategy4(self, start_node, width):
+        self.find_point(start_node ,width)
+        ### 寶藏點
+        treasure = self.endpoint
+        treasure.remove(start_node)
+        
+        ### find highest & stem path
+        highestNode = '0'       # node of highest_node
+        for i in treasure:      # find highest point
+            if self.point[i] > self.point[highestNode]:
+                highestNode = i
+        treasure.remove(highestNode)
+        stem , stem_length = self.bfs_short(start_node, highestNode)
+        
+        ### analysis the shortest path to stem
+        short_len = []          # 
+        node_connect = []       # connected node
+        order1_row = dict()
+        order1_treasure = []
+        for i in stem:
+            order1_row[i] = []
+        order1 = [start_node]         # before the highestNode
+        order2_treasure = []
+        order2 = list()         # after
+        for endpoint in treasure:
+            shortLen = 0
+            insection = '0'
+            for stemNode in stem:
+                n, Len = self.bfs_short(stemNode, endpoint)
+                if shortLen == 0 or Len < shortLen:
+                    shortLen = Len
+                    insection = stemNode
+            ### order1
+            if shortLen < 10:
+                order1_row[insection].append(endpoint)
+            ### order2
+            else:
+                order2_treasure.append(endpoint)
+
+        for i in stem:
+            order1_treasure =[]
+            for j in order1_row[i]:
+                order1_treasure.append(j)
+            if len(order1_row[i]) > 0:
+                self.endpoint = [order1.pop()] + order1_treasure
+                n, l = self.bfs_allmaze_length(self.endpoint[0])
+                order1 += n
+            
+
+        self.endpoint = [highestNode] + order2_treasure 
+        order2, l = self.bfs_allmaze_length(highestNode)
+        # print(order1)
+        # print(order2)
+        a = order1.pop()
+        n, l = self.bfs(a, highestNode)
+        self.path = order1 + n + order2[1:]
+        print(order1 + n + order2[1:])
+        return order1 + n + order2[1:]
+
 if __name__ == "__main__":
     import time
     # test web : http://192.168.50.165:3000
@@ -450,6 +622,7 @@ if __name__ == "__main__":
         print("Length:", length)
         dir, action = maze.get_dir(pos)
         print("entire action:" ,action)
+
     @timer
     def test4(fname, start, pos='N'):
         print(f'--- Show all paths in {fname} ---')
@@ -457,6 +630,7 @@ if __name__ == "__main__":
         print(maze.endpoint)
         maze.strategy1(start,pos,6)
     
+    @timer
     def test5(fname, start, width, pos='N'):
         print(f'--- Use s2  solve {fname} ---')
         maze = bfs_maze('./data/'+fname)
@@ -466,11 +640,15 @@ if __name__ == "__main__":
         dir, action = maze.get_dir(pos)
         print("entire action:" ,action)
 
+    # test5("E_maze.csv",'1', 2)
     # test5("medium_maze.csv",'1', 3)
     # test5("maze.csv",'2', 5)
-    test5("maze_8x6_1.csv",'6', 6)
+    # test5("maze_8x6_1.csv",'6', 6)
 
-    # test3("medium_maze.csv",'1')    
+    # test3("medium_maze.csv",'1')
     # test4("maze.csv",'2','N')
     # test4("maze_8x6_1.csv",'6', 'W')
     # test3("maze_8x6_1.csv",'6', 'W')
+    maze = bfs_maze('./data/maze_8x6_1.csv')
+    
+    maze.strategy4('6',6)
