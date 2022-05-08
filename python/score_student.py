@@ -40,7 +40,6 @@ class Scoreboard_stu:
                 self.totalScore += point
                 print("A treasure is found! You got " + str(point) + " points with:" + hex(UID))
                 print("Current score: "+ str(self.totalScore))
-                print("")
                 self.visitList.append(UID)
 
     def getCurrentScore(self) -> int:

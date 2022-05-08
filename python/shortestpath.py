@@ -4,14 +4,14 @@ class ShortestPath:
         infromation of node
     """
     def __init__(self, start:str, end:str, point: int, bfspath:list,length:int, action:str) -> None:
-        time_list = {'s':1.6, 't':1.47, 'r':1.27, 'l':1.27}
-        self.start= start
-        self.end = end
-        self.point = point
-        self.path = bfspath
-        self.length = length
-        self.action = action    
-        self.usetime = 0.0
+        time_list = {'s':1.6, 't':1.47, 'r':1.27, 'l':1.27} # 直走轉彎的時間資訊
+        self.start= start       # 起點
+        self.end = end          # 終點
+        self.point = point      # 分數
+        self.path = bfspath     # 路徑節點順序
+        self.length = length    # 路徑長度
+        self.action = action    # path action，路徑的前後左右迴轉
+        self.usetime = 0.0      # 記錄總共使用的時間
         for act in self.action:
             self.usetime += time_list[act]
 
