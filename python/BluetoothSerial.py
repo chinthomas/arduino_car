@@ -1,4 +1,3 @@
-from socket import timeout
 import threading
 import time
 import sys
@@ -25,7 +24,7 @@ class bluetooth:
     def do_connect(self, port: str, baudrate: int=9600) -> bool:
         """ Connect to the specify port with particular baudrate """
         # Connection function. Disconnect the previous communication, specify a new one.
-        self.ser.close()    
+        self.ser.close()
         print("Connecting...")
 
         try:
@@ -44,23 +43,22 @@ class bluetooth:
 
     def SerialreadString(self) -> str:
         # Scan the input buffer until meet a '\n'. return none if doesn't exist.
+        time.sleep(0.05)    # let msg fill the buffer
         if(self.waiting()):
-            # receiveMsg = self.ser.readline().decode("utf-8")[:-1]
+            # receiveMsg = self.ser.readline().decode("utf-8")[:-1]            
             receiveMsg = self.ser.read(self.ser.inWaiting()).decode("utf-8")
             ### test the message we get ###
             # receiveMsg_b =self.ser.read(self.ser.inWaiting())
             # print('Row~', receiveMsg_b)
             # receiveMsg = receiveMsg_b.decode("utf-8")
             # print('Decode~', receiveMsg)
-            self.ser.flushInput()
+            # self.ser.flushInput()
             return receiveMsg
-        else:
-            return ""
+
 
     def SerialReadByte(self):
-        time.sleep(0.05)
-        waiting = self.ser.inWaiting()
-        receiveMsg = self.ser.read(waiting)
+        time.sleep(0.2)
+        receiveMsg = self.ser.read(self.ser.inWaiting())
         if (receiveMsg):
             UID = hex(int.from_bytes(receiveMsg, byteorder='big', signed=False))
             print("Arduino~",receiveMsg)
@@ -74,7 +72,7 @@ if __name__ == "__main__":
     def read() -> None:
         while True:
             if bt.waiting():
-                Msg = bt.SerialReadByte()
+                Msg = bt.SerialreadString()
                 print(f'{Msg}')
                 # TypeError: cannot convert 'str' object to bytes
                 # print(hex(int.from_bytes(Msg, byteorder='big', signed=False)))
@@ -86,7 +84,7 @@ if __name__ == "__main__":
             bt.Serialwrite(msgWrite)
 
     # Please modify the port name.
-    port = "COM4"
+    port = "COM8"
     bt = bluetooth()
     # bt = bluetooth(port)
     while not bt.do_connect(port): pass
