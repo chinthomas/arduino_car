@@ -10,7 +10,7 @@ import sys
 def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Arduino-Car Server")
     parser.add_argument('-p', '--port', default="COM8", help="the port of BT")
-    parser.add_argument('-f', '--file', default="./data/medium_maze.csv", help="the file of maze")
+    parser.add_argument('-f', '--file', default="./data/maze_8x6_1.csv", help="the file of maze")
     parser.add_argument('--start', default="1", help="the start node")
     parser.add_argument('--end', default="0", help="the end node")
     parser.add_argument('--dir', default="N", help="the car direction")
@@ -21,7 +21,8 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--bfs', help="only test the bfs", action="store_true")
     return parser
 
-def get_action(carmaze:maze.bfs_maze, start:str, end:str, dir:str, mode:str='1')-> list:
+def get_action(fname, start:str, end:str, dir:str, mode:str='1')-> list:
+    carmaze = maze.bfs_maze(fname)
     print(f"--- Analyze of Maze use mode{mode} ---")
     if mode == '0':
         entire_path, length = carmaze.bfs(start, end)
@@ -29,7 +30,6 @@ def get_action(carmaze:maze.bfs_maze, start:str, end:str, dir:str, mode:str='1')
         entire_path, length = carmaze.bfs_allmaze(start)
     elif mode == '2':
         entire_path, length = carmaze.bfs_allmaze_length(start)
-    
     elif mode == '3':
         solution = carmaze.strategy1(start,dir,3) # modify width of the maze
         return solution.action
@@ -48,41 +48,27 @@ def get_action(carmaze:maze.bfs_maze, start:str, end:str, dir:str, mode:str='1')
 
 def main(parser: argparse.ArgumentParser):
     args = parser.parse_args()
-    
-    ### analysis of maze ###
-    carmaze = maze.bfs_maze(args.file)
-    action = get_action(carmaze, mode=args.mode, start=args.start, end=args.end, dir=args.dir)
-    # action = get_action(carmaze, '1', 'N', '0' ,'0', mode='1')
+    action = get_action(args.file, mode=args.mode, start=args.start, end=args.end, dir=args.dir)
     if args.bfs:
-        return False
-    
+        return 0
+
     ### setup the interface for data transformation ###
-    interf = interface.interface()
-    interf.connect_BT(args.port)
-    
-    # readThread = threading.Thread(target=interf.BT_write) # 還沒甚麼用
-    # readThread.daemon = True
-    # readThread.start()
-    
-    
+    interf = interface.interface(args.port)
+
     ans = input('ready to go?[y/n]')
+    if ans in ['n', 'N']:print('cancel plan')
     
-    if ans in ['n', 'N']:
-        print('cancel plan')
-    
-    # time start
-    else:# car start
+    ### start
+    else:
         interf.connect_server(args.test,'RFeasy') # 隊名這裡改
         t_start = time.time()
-        # action = 'slltrrtlltrrtlltrrtlltrrtllt'           # 直接指定用這行
-        interf.send_action(action)        # 傳車子的動作指令
-        while (time.time()-t_start) < 30: # 程式執行時間，結束後車子仍會跑，但python收不到UID
-            interf.score()                # 讀UID並print分數
+        interf.send_action(action)                # 傳車子的動作指令
+        while (time.time()-t_start) < 95:         # 程式執行時間，結束後車子仍會跑，但python收不到UID
+            interf.score()                        # 讀UID並print分數
 
     ### gmae end ###
-    print("interface end\n")
+    print("Interface Deconnect\n")
     interf.end_interface()
-   
 
 if __name__ =="__main__":
     parser = get_parser()
